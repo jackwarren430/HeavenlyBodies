@@ -7,12 +7,12 @@
 #define SUCCESS 1
 #define FAILURE 0
 
-#define PI 3.141
+#define PI 3.141f
 
 typedef struct star {
     char *name;
-    int coordinates[2];
-    int velocity[2];
+    float coordinates[2];
+    float velocity[2];
     float radius;
     float mass;
     float em_field_strength;
@@ -20,8 +20,8 @@ typedef struct star {
 
 typedef struct planet {
     char *name;
-    int coordinates[2];
-    int velocity[2];
+    float coordinates[2];
+    float velocity[2];
     float radius;
     float mass;
     float em_field_strength;
@@ -50,8 +50,11 @@ typedef struct system {
     int num_planets;
 } SolarSystem;
 
-World *createPlanet(char *name, int x_coord, int y_coord, float radius, float mass, float *em_field_strength, int water, int life);
-Star *createStar(char *name, int x_coord, int y_coord, float radius, float mass, float *em_field_strength);
-SolarSystem *createHomogenousSolarSystem(int num_planets);
-void updateSystemLife(SolarSystem *solar_system);
+World *createPlanet(char *name, float x_coord, float y_coord, float x_vel, float y_vel,float radius, float mass, float *em_field_strength, int water, int life);
+Star *createStar(char *name, float x_coord, float y_coord, float x_vel, float y_vel,float radius, float mass, float *em_field_strength);
+SolarSystem *createHomogenousSolarSystem(int num_planets, float interval);
+SolarSystem *createTwoBodySystem();
+SolarSystem *createTwoPlanetSystem();
+void updateSystemLife(SolarSystem *solar_system, float deltaTime);
 void calculateLifeEnergy(World *planet);
+

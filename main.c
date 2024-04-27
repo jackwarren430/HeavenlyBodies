@@ -4,6 +4,10 @@
 SolarSystem *solar_system;
 SDL_Renderer *renderer;
 
+Uint32 lastTick;
+float deltaTime;
+float elapsedTicks;
+
 int initializeSystem();
 void mainLoop();
 
@@ -31,14 +35,27 @@ int main(void) {
     if (initializeSystem() == FAILURE) {
         done = SDL_TRUE;
     }
+    lastTick = SDL_GetTicks();
+    deltaTime = 0.0f;
+    elapsedTicks = 0;
+    SDL_Delay(16);
     while (!done) {
+        elapsedTicks = SDL_GetTicks() - lastTick;
+        deltaTime = elapsedTicks * 0.001f; 
         SDL_Event event;
         while (SDL_PollEvent(&event)) {
             if (event.type == SDL_QUIT) {
                 done = SDL_TRUE;
             }
         }
-        mainLoop();
+        if (deltaTime >= 1.0f / FRAMERATE) {
+            mainLoop();
+            lastTick = SDL_GetTicks();
+            deltaTime = 0.0f;
+            elapsedTicks = 0;
+        }
+
+        
     }
 
     SDL_DestroyWindow(win);
@@ -47,7 +64,9 @@ int main(void) {
 }
 
 int initializeSystem() {
-    solar_system = createHomogenousSolarSystem(10);
+    solar_system = createHomogenousSolarSystem(10, PI / 3);
+    //solar_system = createTwoBodySystem();
+    //solar_system = createTwoPlanetSystem();
     if (!solar_system) {
         return FAILURE;
     }
@@ -55,9 +74,17 @@ int initializeSystem() {
 }
 
 void mainLoop() {
-    updateSystemPhysics(solar_system);
-    updateSystemLife(solar_system);
+    updateSystemPhysics(solar_system, deltaTime);
+    updateSystemLife(solar_system, deltaTime);
     renderGraphics(renderer, solar_system);
+
+    /*float velocity_x = solar_system->planets[0]->velocity[0];
+    float velocity_y = solar_system->planets[0]->velocity[1];
+    float coord_x = solar_system->planets[0]->coordinates[0];
+    float coord_y = solar_system->planets[0]->coordinates[1];
+
+    printf("planet info:\nvelocity: %f, %f\nposition: %f, %f\n\n", velocity_x, velocity_y, coord_x, coord_y);
+    */
 }
 
 

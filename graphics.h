@@ -15,6 +15,8 @@
 #define YELLOW 0xFF00FFFF
 #define DARK_YELLOW 0xFF00CFCF
 #define BLUE 0xFFFF0000
+#define GREEN 0xFF00FF00
+#define RED 0xFF0000FF
 
 //#define TRANSLATE_X(int x)
 
