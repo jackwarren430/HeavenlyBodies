@@ -1,16 +1,13 @@
 #include "ui.h"
 
 
-SolarSystem *solar_system;
-SDL_Renderer *renderer;
-TTF_Font* font;
-
 Uint32 lastTick;
 float deltaTime;
 float elapsedTicks;
-
-int initializeSystem();
-void mainLoop();
+extern State state;
+SDL_bool done;
+SDL_Renderer *renderer;
+TTF_Font *font;
 
 int main(void) {
     
@@ -33,14 +30,12 @@ int main(void) {
     }
     SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_BLEND);
 
-    SDL_bool done = SDL_FALSE;
-    if (initializeSystem() == FAILURE) {
-        done = SDL_TRUE;
-    }
+    done = SDL_FALSE;
     if (TTF_Init() == -1) {
         fprintf(stderr, "SDL_ttf could not initialize! SDL_ttf Error: %s\n", TTF_GetError());
         return 0;
     }
+    state = MENU_INIT;
     font = TTF_OpenFont("./Basic-Regular.ttf", 24);
     lastTick = SDL_GetTicks();
     deltaTime = 0.0f;
@@ -53,10 +48,12 @@ int main(void) {
         while (SDL_PollEvent(&event)) {
             if (event.type == SDL_QUIT) {
                 done = SDL_TRUE;
+            } else {
+                handleEvent(&event);
             }
         }
         if (deltaTime >= 1.0f / FRAMERATE) {
-            mainLoop();
+            mainLoop(deltaTime, renderer, font);
             lastTick = SDL_GetTicks();
             deltaTime = 0.0f;
             elapsedTicks = 0;
@@ -70,30 +67,7 @@ int main(void) {
     return 0;
 }
 
-int initializeSystem() {
-    solar_system = createHomogenousSolarSystem(10, PI / 3, 30);
-    //solar_system = createTwoBodySystem();
-    //solar_system = createTwoPlanetSystem();
-    //solar_system = createThreeBodyProblem();
-    if (!solar_system) {
-        return FAILURE;
-    }
-    return SUCCESS;
-}
 
-void mainLoop() {
-    updateSystemPhysics(solar_system, deltaTime);
-    updateSystemLife(solar_system, deltaTime);
-    renderGraphics(renderer, font, solar_system);
-
-    /*float velocity_x = solar_system->planets[0]->velocity[0];
-    float velocity_y = solar_system->planets[0]->velocity[1];
-    float coord_x = solar_system->planets[0]->coordinates[0];
-    float coord_y = solar_system->planets[0]->coordinates[1];
-
-    printf("planet info:\nvelocity: %f, %f\nposition: %f, %f\n\n", velocity_x, velocity_y, coord_x, coord_y);
-    */
-}
 
 
 

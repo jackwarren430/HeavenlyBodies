@@ -20,9 +20,16 @@
 #define GREEN 0xFF00FF00
 #define RED 0xFF0000FF
 
-//#define TRANSLATE_X(int x)
+typedef struct {
+    SDL_Rect rect;
+    const char* text;
+    SDL_Color color;
+    SDL_bool isHovered;
+} Button;
 
 void renderGraphics(SDL_Renderer *renderer, TTF_Font* font, SolarSystem *solar_system);
 void drawSun(SDL_Renderer *renderer, Star *sun);
 void drawPlanets(SDL_Renderer *renderer, World **planets, int numPlanets);
 void drawBackground(SDL_Renderer *renderer, TTF_Font* font);
+void renderMenu(SDL_Renderer *renderer, TTF_Font *font, Button *play_button, Button *plus_planet_button, Button *minus_planet_button, int num_planets);
+void renderButton(SDL_Renderer *renderer, TTF_Font *font, Button button);

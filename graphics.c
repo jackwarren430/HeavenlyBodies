@@ -15,7 +15,6 @@ void renderGraphics(SDL_Renderer *renderer, TTF_Font* font, SolarSystem *solar_s
     // draw the planets
     drawPlanets(renderer, solar_system->planets, solar_system->num_planets);
 
-    SDL_RenderPresent(renderer);
 }
 
 void drawBackground(SDL_Renderer *renderer, TTF_Font* font) {
@@ -164,3 +163,54 @@ void drawPlanets(SDL_Renderer *renderer, World **planets, int num_planets) {
         
     }
 }
+
+void renderMenu(SDL_Renderer *renderer, TTF_Font *font, Button *play_button, Button *plus_planet_button, Button *minus_planet_button, int num_planets) {
+    SDL_SetRenderDrawColor(renderer, 172, 218, 224, 255);
+    SDL_RenderClear(renderer);
+    SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_BLEND);
+    renderButton(renderer, font, *play_button);
+    renderButton(renderer, font, *plus_planet_button);
+    renderButton(renderer, font, *minus_planet_button);
+
+    SDL_Color textColor = {0, 0, 0, 255};
+    char num_text[3];
+    sprintf(num_text, "%d", num_planets);
+    SDL_Surface *textSurface = TTF_RenderText_Solid(font, num_text, textColor);
+    if (textSurface == NULL) {
+        printf("Unable to render text surface! SDL_ttf Error: %s\n", TTF_GetError());
+        return;
+    }
+    SDL_Texture* textTexture = SDL_CreateTextureFromSurface(renderer, textSurface);
+    if (textTexture == NULL) {
+        fprintf(stderr, "Unable to create texture from rendered text! SDL Error: %s\n", SDL_GetError());
+        SDL_FreeSurface(textSurface);
+        return;
+    }
+    int textWidth = textSurface->w;
+    int textHeight = textSurface->h;
+    int x_pos = (SCREEN_WIDTH / 2) - 5;
+    int y_pos = (SCREEN_HEIGHT / 2) + 30;
+    SDL_Rect renderQuad = {x_pos, y_pos, textWidth, textHeight};
+    SDL_RenderCopy(renderer, textTexture, NULL, &renderQuad);
+    SDL_DestroyTexture(textTexture);
+    SDL_FreeSurface(textSurface);
+}
+
+void renderButton(SDL_Renderer *renderer, TTF_Font *font, Button button) {
+    SDL_Color color = button.isHovered ? (SDL_Color){200, 200, 200, 255} : button.color;
+    SDL_SetRenderDrawColor(renderer, color.r, color.g, color.b, color.a);
+    SDL_RenderFillRect(renderer, &button.rect);
+    SDL_Surface* surface = TTF_RenderText_Solid(font, button.text, (SDL_Color){0, 0, 0, 255});
+    SDL_Texture* texture = SDL_CreateTextureFromSurface(renderer, surface);
+    SDL_Rect textRect = {
+        button.rect.x + (button.rect.w - surface->w) / 2,
+        button.rect.y + (button.rect.h - surface->h) / 2,
+        surface->w,
+        surface->h
+    };
+    SDL_RenderCopy(renderer, texture, NULL, &textRect);
+    SDL_FreeSurface(surface);
+    SDL_DestroyTexture(texture);
+
+}
+

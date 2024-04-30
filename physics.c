@@ -34,7 +34,39 @@ void calculateTotalForce(SolarSystem *system, World *planet, float delta_time) {
         force_on_planet_y = G * ((mass1 * mass2) / pow(distance, 3)) * (system->sun->coordinates[1] - planet->coordinates[1]);
         total_force[0] += force_on_planet_x;
         total_force[1] += force_on_planet_y;
+
+        // bounce back
+        if (distance < planet->radius + system->sun->radius) {
+            float vector_x = system->sun->coordinates[0] - planet->coordinates[0];
+            float vector_y = system->sun->coordinates[1] - planet->coordinates[1];
+            //float theta = atan(vector_y / vector_x);
+            float v_dot_v = (vector_x * vector_x) + (vector_y * vector_y);
+            float u_dot_v = (vector_x * planet->velocity[0]) + (vector_y * planet->velocity[1]);
+            planet->velocity[0] -= (u_dot_v / v_dot_v) * vector_x;
+            planet->velocity[1] -= (u_dot_v / v_dot_v) * vector_y;
+            system->sun->velocity[0] += ((u_dot_v / v_dot_v) * vector_x) / system->sun->mass;
+            system->sun->velocity[1] += ((u_dot_v / v_dot_v) * vector_y) / system->sun->mass;
+            total_force[0] -= force_on_planet_x;
+            total_force[1] -= force_on_planet_y;
+            system->sun->radius += planet->radius / planet->mass;
+            system->sun->mass += planet->mass;
+            planet->radius = 0;
+            planet->mass = 0;
+            for (int i = 0; i < system->num_planets; i++) {
+                World *cur_planet = system->planets[i];
+                if (strcmp(cur_planet->name, planet->name) == 0) {
+                    for (int j = i; j < system->num_planets - 1; j++) {
+                        system->planets[j] = system->planets[j+1];
+                    }
+                    system->num_planets--;
+                    break;
+                }
+            }
+        }
     }
+
+    
+    
     
 
     // force from planets
@@ -50,6 +82,20 @@ void calculateTotalForce(SolarSystem *system, World *planet, float delta_time) {
         force_on_planet_y = G * ((mass1 * mass2) / pow(distance, 3)) * (cur_planet->coordinates[1] - planet->coordinates[1]);
         total_force[0] += force_on_planet_x;
         total_force[1] += force_on_planet_y;
+        float collision_loss = 0.7f;
+        
+        if (distance < planet->radius + cur_planet->radius) {
+            float vector_x = cur_planet->coordinates[0] - planet->coordinates[0];
+            float vector_y = cur_planet->coordinates[1] - planet->coordinates[1];
+            float v_dot_v = (vector_x * vector_x) + (vector_y * vector_y);
+            float u_dot_v = (vector_x * planet->velocity[0]) + (vector_y * planet->velocity[1]);
+            planet->velocity[0] -= ((u_dot_v / v_dot_v) * vector_x) / planet->mass * collision_loss;
+            planet->velocity[1] -= ((u_dot_v / v_dot_v) * vector_y) / planet->mass * collision_loss;
+            total_force[0] -= force_on_planet_x;
+            total_force[1] -= force_on_planet_y;
+            cur_planet->velocity[0] += ((u_dot_v / v_dot_v) * vector_x) / cur_planet->mass * collision_loss;
+            cur_planet->velocity[1] += ((u_dot_v / v_dot_v) * vector_y) / cur_planet->mass * collision_loss;
+        } 
     }
     float acceleration_x = total_force[0] / planet->mass;
     float acceleration_y = total_force[1] / planet->mass;
@@ -68,6 +114,19 @@ void calculateSunTotalForce(SolarSystem *system, Star *sun, float delta_time) {
         float force_on_sun_y = G * ((mass1 * mass2) / pow(distance, 3)) * (cur_planet->coordinates[1] - sun->coordinates[1]);
         total_force[0] += force_on_sun_x;
         total_force[1] += force_on_sun_y;
+        if (distance < cur_planet->radius + sun->radius) {
+            float vector_x = cur_planet->coordinates[0] - sun->coordinates[0];
+            float vector_y = cur_planet->coordinates[1] - sun->coordinates[1];
+            float v_dot_v = (vector_x * vector_x) + (vector_y * vector_y);
+            float u_dot_v = (vector_x * sun->velocity[0]) + (vector_y * sun->velocity[1]);
+            sun->velocity[0] -= (u_dot_v / v_dot_v) * vector_x;
+            sun->velocity[1] -= (u_dot_v / v_dot_v) * vector_y;
+            total_force[0] -= force_on_sun_x;
+            total_force[1] -= force_on_sun_y;
+            cur_planet->velocity[0] += ((u_dot_v / v_dot_v) * vector_x) / cur_planet->mass;
+            cur_planet->velocity[1] += ((u_dot_v / v_dot_v) * vector_y) / cur_planet->mass;
+        } 
+
     }
     float acceleration_x = total_force[0] / sun->mass;
     float acceleration_y = total_force[1] / sun->mass;
