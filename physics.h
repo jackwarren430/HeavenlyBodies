@@ -3,8 +3,6 @@
 #include <math.h>
 #include "graphics.h"
 
-#define FRAMERATE 60
-#define G 1000.0f
 
 void updateSystemPhysics(SolarSystem *system, float delta_time);
 void calculateTotalForce(SolarSystem *system, World *planet, float delta_time);

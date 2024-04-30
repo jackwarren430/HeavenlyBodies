@@ -1,8 +1,9 @@
-#include "physics.h"
+#include "ui.h"
 
 
 SolarSystem *solar_system;
 SDL_Renderer *renderer;
+TTF_Font* font;
 
 Uint32 lastTick;
 float deltaTime;
@@ -30,11 +31,17 @@ int main(void) {
         SDL_Quit();
         return 0;
     }
+    SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_BLEND);
 
     SDL_bool done = SDL_FALSE;
     if (initializeSystem() == FAILURE) {
         done = SDL_TRUE;
     }
+    if (TTF_Init() == -1) {
+        fprintf(stderr, "SDL_ttf could not initialize! SDL_ttf Error: %s\n", TTF_GetError());
+        return 0;
+    }
+    font = TTF_OpenFont("./Basic-Regular.ttf", 24);
     lastTick = SDL_GetTicks();
     deltaTime = 0.0f;
     elapsedTicks = 0;
@@ -54,19 +61,20 @@ int main(void) {
             deltaTime = 0.0f;
             elapsedTicks = 0;
         }
-
-        
     }
-
+    TTF_CloseFont(font);
+    TTF_Quit();
     SDL_DestroyWindow(win);
+    SDL_DestroyRenderer(renderer);
     SDL_Quit();
     return 0;
 }
 
 int initializeSystem() {
-    solar_system = createHomogenousSolarSystem(10, PI / 3);
+    solar_system = createHomogenousSolarSystem(10, PI / 3, 30);
     //solar_system = createTwoBodySystem();
     //solar_system = createTwoPlanetSystem();
+    //solar_system = createThreeBodyProblem();
     if (!solar_system) {
         return FAILURE;
     }
@@ -76,7 +84,7 @@ int initializeSystem() {
 void mainLoop() {
     updateSystemPhysics(solar_system, deltaTime);
     updateSystemLife(solar_system, deltaTime);
-    renderGraphics(renderer, solar_system);
+    renderGraphics(renderer, font, solar_system);
 
     /*float velocity_x = solar_system->planets[0]->velocity[0];
     float velocity_y = solar_system->planets[0]->velocity[1];

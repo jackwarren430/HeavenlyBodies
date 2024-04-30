@@ -6,8 +6,10 @@
 
 #define SUCCESS 1
 #define FAILURE 0
+#define FRAMERATE 60
 
 #define PI 3.141f
+#define G 1000.0f
 
 typedef struct star {
     char *name;
@@ -52,9 +54,10 @@ typedef struct system {
 
 World *createPlanet(char *name, float x_coord, float y_coord, float x_vel, float y_vel,float radius, float mass, float *em_field_strength, int water, int life);
 Star *createStar(char *name, float x_coord, float y_coord, float x_vel, float y_vel,float radius, float mass, float *em_field_strength);
-SolarSystem *createHomogenousSolarSystem(int num_planets, float interval);
+SolarSystem *createHomogenousSolarSystem(int num_planets, float interval, int distance);
 SolarSystem *createTwoBodySystem();
 SolarSystem *createTwoPlanetSystem();
+SolarSystem *createThreeBodyProblem();
 void updateSystemLife(SolarSystem *solar_system, float deltaTime);
 void calculateLifeEnergy(World *planet);
 
