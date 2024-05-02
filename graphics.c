@@ -1,6 +1,8 @@
 
 #include "graphics.h"
 
+int view_width;
+
 
 void renderGraphics(SDL_Renderer *renderer, TTF_Font* font, SolarSystem *solar_system){
     // draw the background
@@ -142,29 +144,31 @@ void drawBackground(SDL_Renderer *renderer, TTF_Font* font) {
 }
 
 void drawSun(SDL_Renderer *renderer, Star *sun) {
-    float x_coord = TRANSLATE_X(sun->coordinates[0]);
-    float y_coord = TRANSLATE_Y(sun->coordinates[1]);
-    float radius = sun->radius;
+    float x_coord = translateX(sun->coordinates[0]);
+    float y_coord = translateY(sun->coordinates[1]);
+    float radius = translateR(sun->radius);
     filledCircleColor(renderer, x_coord, y_coord, radius, YELLOW);
 }
 
 void drawPlanets(SDL_Renderer *renderer, World **planets, int num_planets) {
     for (int i = 0; i < num_planets; i++) {
         World *cur_planet = planets[i];
-        float x_coord = TRANSLATE_X(cur_planet->coordinates[0]);
-        float y_coord = TRANSLATE_Y(cur_planet->coordinates[1]);
-        float radius = cur_planet->radius;
-        char *target = "target";
-        if (strcmp(cur_planet->name, target) == 0) {
-            filledCircleColor(renderer, x_coord, y_coord, radius, RED);
-        } else {
-            filledCircleColor(renderer, x_coord, y_coord, radius, BLUE);
-        }
+        float x_coord = translateX(cur_planet->coordinates[0]);
+        float y_coord = translateY(cur_planet->coordinates[1]);
+        float radius = translateR(cur_planet->radius);
+        
+        //printf("ty: %f\ntest: %f\ntest2: %f\ntest3: %f\ntest4: %f\n\n", y_coord, test, test2, test3, test4);
+        filledCircleColor(renderer, x_coord, y_coord, radius, BLUE);
         
     }
 }
 
-void renderMenu(SDL_Renderer *renderer, TTF_Font *font, Button *play_button, Button *plus_planet_button, Button *minus_planet_button, int num_planets) {
+void renderMenu(SDL_Renderer *renderer, TTF_Font *font, TTF_Font *font_big, Button *play_button, Button *plus_planet_button, Button *minus_planet_button, int num_planets) {
+    if (!renderer || !font || !play_button || !plus_planet_button || !minus_planet_button) {
+        printf("Error: passed in a null pointer to renderMenu\n");
+        return;
+    }
+
     SDL_SetRenderDrawColor(renderer, 172, 218, 224, 255);
     SDL_RenderClear(renderer);
     SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_BLEND);
@@ -173,7 +177,7 @@ void renderMenu(SDL_Renderer *renderer, TTF_Font *font, Button *play_button, But
     renderButton(renderer, font, *minus_planet_button);
 
     SDL_Color textColor = {0, 0, 0, 255};
-    char num_text[3];
+    char num_text[5];
     sprintf(num_text, "%d", num_planets);
     SDL_Surface *textSurface = TTF_RenderText_Solid(font, num_text, textColor);
     if (textSurface == NULL) {
@@ -194,6 +198,28 @@ void renderMenu(SDL_Renderer *renderer, TTF_Font *font, Button *play_button, But
     SDL_RenderCopy(renderer, textTexture, NULL, &renderQuad);
     SDL_DestroyTexture(textTexture);
     SDL_FreeSurface(textSurface);
+
+    char *menu_text = "HeavenlyBodies Simulator";
+
+    SDL_Surface *menuTextSurface = TTF_RenderText_Solid(font_big, menu_text, textColor);
+    if (menuTextSurface == NULL) {
+        printf("Unable to render text surface! SDL_ttf Error: %s\n", TTF_GetError());
+        return;
+    }
+    SDL_Texture* menuTextTexture = SDL_CreateTextureFromSurface(renderer, menuTextSurface);
+    if (menuTextTexture == NULL) {
+        fprintf(stderr, "Unable to create texture from rendered text! SDL Error: %s\n", SDL_GetError());
+        SDL_FreeSurface(menuTextSurface);
+        return;
+    }
+    textWidth = menuTextSurface->w;
+    textHeight = menuTextSurface->h;
+    x_pos = 160;
+    y_pos = 120;
+    SDL_Rect menuRenderQuad = {x_pos, y_pos, textWidth, textHeight};
+    SDL_RenderCopy(renderer, menuTextTexture, NULL, &menuRenderQuad);
+    SDL_DestroyTexture(menuTextTexture);
+    SDL_FreeSurface(menuTextSurface);
 }
 
 void renderButton(SDL_Renderer *renderer, TTF_Font *font, Button button) {
@@ -213,4 +239,59 @@ void renderButton(SDL_Renderer *renderer, TTF_Font *font, Button button) {
     SDL_DestroyTexture(texture);
 
 }
+
+void renderTimeFrame(SDL_Renderer *renderer, TTF_Font *font, float time) {
+    SDL_Color textColor = {0, 0, 0, 255};
+    char num_text[30];
+    sprintf(num_text, "Time Frame: %.2f", time);
+    SDL_Surface *textSurface = TTF_RenderText_Solid(font, num_text, textColor);
+    if (textSurface == NULL) {
+        printf("Unable to render text surface! SDL_ttf Error: %s\n", TTF_GetError());
+        return;
+    }
+    SDL_Texture* textTexture = SDL_CreateTextureFromSurface(renderer, textSurface);
+    if (textTexture == NULL) {
+        fprintf(stderr, "Unable to create texture from rendered text! SDL Error: %s\n", SDL_GetError());
+        SDL_FreeSurface(textSurface);
+        return;
+    }
+    int textWidth = textSurface->w;
+    int textHeight = textSurface->h;
+    int x_pos = 200;
+    int y_pos = 60;
+    SDL_Rect renderQuad = {x_pos, y_pos, textWidth, textHeight};
+    SDL_RenderCopy(renderer, textTexture, NULL, &renderQuad);
+    SDL_DestroyTexture(textTexture);
+    SDL_FreeSurface(textSurface);
+}
+
+void zoomOut() {
+    view_width += 200;
+}
+
+void zoomIn() {
+    view_width -= 200;
+}
+
+float translateX(float x) {
+    float test2 = (SCREEN_WIDTH/2);
+    float test3 = (view_width/2);
+    float test4 = test2 / test3;
+    return SCREEN_WIDTH/2 + (x * test4);
+}
+
+float translateY(float y) {
+    float test2 = (SCREEN_HEIGHT/2);
+    float test3 = ((view_width * SCREEN_RATIO)/2);
+    float test4 = test2 / test3;
+    return SCREEN_HEIGHT/2 - (y * test4);
+}
+
+float translateR(float r) {
+    float t1 = (SCREEN_WIDTH / view_width);
+    printf("%f\n",t1);
+    return r * t1;
+}
+
+
 

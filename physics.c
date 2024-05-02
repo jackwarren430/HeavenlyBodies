@@ -82,7 +82,7 @@ void calculateTotalForce(SolarSystem *system, World *planet, float delta_time) {
         force_on_planet_y = G * ((mass1 * mass2) / pow(distance, 3)) * (cur_planet->coordinates[1] - planet->coordinates[1]);
         total_force[0] += force_on_planet_x;
         total_force[1] += force_on_planet_y;
-        float collision_loss = 0.7f;
+        float collision_loss = 1.0f;
         
         if (distance < planet->radius + cur_planet->radius) {
             float vector_x = cur_planet->coordinates[0] - planet->coordinates[0];

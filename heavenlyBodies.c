@@ -11,6 +11,80 @@ void calculateLifeEnergy(World *planet) {
 }
 
 
+SystemPlayback *initializePlayback(SolarSystem *system) {
+    SystemPlayback *playback = (SystemPlayback *)malloc(sizeof(SystemPlayback));
+    if (!playback) {
+        return NULL;
+    }
+    playback->time_frames = (float*)malloc(100 * sizeof(float));
+    if (!playback->time_frames) {
+        free(playback);
+        return NULL;
+    }
+    playback->system_frames = (SolarSystem**)malloc(100 * sizeof(SolarSystem*));
+    if (!playback->system_frames) {
+        free(playback->time_frames);
+        free(playback);
+        return NULL;
+    }
+    playback->num_frames = 0;
+    playback->frame_capacity = 100;
+    return playback;
+}
+
+
+int updatePlayback(SolarSystem *system, SystemPlayback *playback, float cur_time) {
+    if (playback->num_frames >= playback->frame_capacity) {
+        playback->frame_capacity += 100;
+        SolarSystem **new_system_frames = (SolarSystem**)realloc(playback->system_frames, playback->frame_capacity * sizeof(SolarSystem*));
+        if (!new_system_frames) {
+            return FAILURE;
+        }
+        playback->system_frames = new_system_frames;
+        float *new_time_frames = (float*)realloc(playback->time_frames, playback->frame_capacity * sizeof(float*));
+        if (!new_time_frames) {
+            free(new_system_frames);
+            return FAILURE;
+        }
+        playback->time_frames = new_time_frames;
+    }
+    SolarSystem *new_system_frame = (SolarSystem*)malloc(sizeof(SolarSystem));
+    if (!new_system_frame) {
+        return FAILURE;
+    }
+    deepCopySystem(new_system_frame, system);
+    playback->system_frames[playback->num_frames] = new_system_frame;
+    playback->time_frames[playback->num_frames] = cur_time;
+
+    playback->num_frames++;
+    return SUCCESS;
+}
+
+void deepCopySystem(SolarSystem *dst_system, SolarSystem *src_system) {
+    Star *new_star = createStar(src_system->sun->name, src_system->sun->coordinates[0], src_system->sun->coordinates[1],
+        src_system->sun->velocity[0], src_system->sun->velocity[1], src_system->sun->radius, src_system->sun->mass, &src_system->sun->em_field_strength);
+    if (!new_star) {
+        return;
+    }
+    dst_system->sun = new_star;
+    World **new_planets = (World **)malloc(src_system->num_planets * sizeof(World*));
+    if (!new_planets) {
+        return;
+    }
+    for (int i = 0; i < src_system->num_planets; i++) {
+        World *src_planet = src_system->planets[i];
+        World *new_planet = createPlanet(src_planet->name, src_planet->coordinates[0], src_planet->coordinates[1],
+            src_planet->velocity[0], src_planet->velocity[1], src_planet->radius, src_planet->mass, &src_planet->em_field_strength, src_planet->water, src_planet->life);
+        if (!new_planet) {
+            return;
+        }
+        new_planets[i] = new_planet;
+    }
+    dst_system->planets = new_planets;
+    dst_system->num_planets = src_system->num_planets;
+}
+
+
 World *createPlanet(char *name, float x_coord, float y_coord, float x_vel, float y_vel, float radius, float mass, float *em_field_strength, int water, int life) {
     if (!name) {
         return NULL;

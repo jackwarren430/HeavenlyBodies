@@ -5,11 +5,9 @@
 #include <stdlib.h>
 #include "heavenlyBodies.h"
 
-#define SCREEN_WIDTH 1000
-#define SCREEN_HEIGHT 800
-
-#define TRANSLATE_X(x) (SCREEN_WIDTH/2 + x)
-#define TRANSLATE_Y(y) (SCREEN_HEIGHT/2 - y)
+#define SCREEN_WIDTH (float)1000
+#define SCREEN_HEIGHT (float)800
+#define SCREEN_RATIO SCREEN_HEIGHT / SCREEN_WIDTH
 
 // format: alpha/Blue/Green/Red
 #define WHITE 0xFFFFFFFF
@@ -31,5 +29,11 @@ void renderGraphics(SDL_Renderer *renderer, TTF_Font* font, SolarSystem *solar_s
 void drawSun(SDL_Renderer *renderer, Star *sun);
 void drawPlanets(SDL_Renderer *renderer, World **planets, int numPlanets);
 void drawBackground(SDL_Renderer *renderer, TTF_Font* font);
-void renderMenu(SDL_Renderer *renderer, TTF_Font *font, Button *play_button, Button *plus_planet_button, Button *minus_planet_button, int num_planets);
+void renderMenu(SDL_Renderer *renderer, TTF_Font *font, TTF_Font *font_big, Button *play_button, Button *plus_planet_button, Button *minus_planet_button, int num_planets);
 void renderButton(SDL_Renderer *renderer, TTF_Font *font, Button button);
+void renderTimeFrame(SDL_Renderer *renderer, TTF_Font *font, float time);
+void zoomOut();
+void zoomIn();
+float translateX(float x);
+float translateY(float y);
+float translateR(float r);

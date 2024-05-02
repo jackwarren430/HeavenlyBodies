@@ -8,6 +8,7 @@ extern State state;
 SDL_bool done;
 SDL_Renderer *renderer;
 TTF_Font *font;
+TTF_Font *font_big;
 
 int main(void) {
     
@@ -37,6 +38,7 @@ int main(void) {
     }
     state = MENU_INIT;
     font = TTF_OpenFont("./Basic-Regular.ttf", 24);
+    font_big = TTF_OpenFont("./Basic-Regular.ttf", 60);
     lastTick = SDL_GetTicks();
     deltaTime = 0.0f;
     elapsedTicks = 0;
@@ -53,7 +55,7 @@ int main(void) {
             }
         }
         if (deltaTime >= 1.0f / FRAMERATE) {
-            mainLoop(deltaTime, renderer, font);
+            mainLoop(deltaTime, renderer, font, font_big);
             lastTick = SDL_GetTicks();
             deltaTime = 0.0f;
             elapsedTicks = 0;
