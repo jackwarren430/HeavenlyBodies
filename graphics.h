@@ -18,6 +18,20 @@
 #define GREEN 0xFF00FF00
 #define RED 0xFF0000FF
 
+//  button positions
+#define PLAY_BUTTON_X SCREEN_WIDTH / 2 - 40
+#define PLAY_BUTTON_Y SCREEN_HEIGHT / 2 - 40
+#define SOLAR_SYSTEM_Y SCREEN_HEIGHT / 2 + 150
+
+#define PLUS_PLANET_X SCREEN_WIDTH / 5 - 50
+#define MINUS_PLANET_X SCREEN_WIDTH / 5 + 30
+#define PLUS_SUNMASS_X 2 * SCREEN_WIDTH / 5 - 50
+#define MINUS_SUNMASS_X 2 * SCREEN_WIDTH / 5 + 60
+#define PLUS_PLANETMASS_X 3 * SCREEN_WIDTH / 5 - 50
+#define MINUS_PLANETMASS_X 3 * SCREEN_WIDTH / 5 + 30
+#define PLUS_DISTANCE_X 4 * SCREEN_WIDTH / 5 - 50
+#define MINUS_DISTANCE_X 4 * SCREEN_WIDTH / 5 + 30
+
 typedef struct {
     SDL_Rect rect;
     const char* text;
@@ -29,8 +43,9 @@ void renderGraphics(SDL_Renderer *renderer, TTF_Font* font, SolarSystem *solar_s
 void drawSun(SDL_Renderer *renderer, Star *sun);
 void drawPlanets(SDL_Renderer *renderer, World **planets, int numPlanets);
 void drawBackground(SDL_Renderer *renderer, TTF_Font* font);
-void renderMenu(SDL_Renderer *renderer, TTF_Font *font, TTF_Font *font_big, Button *play_button, Button *plus_planet_button, Button *minus_planet_button, int num_planets);
+void renderMenu(SDL_Renderer *renderer);
 void renderButton(SDL_Renderer *renderer, TTF_Font *font, Button button);
+void renderText(SDL_Renderer *renderer, TTF_Font *font, int x, int y, char *text);
 void renderTimeFrame(SDL_Renderer *renderer, TTF_Font *font, float time);
 void zoomOut();
 void zoomIn();

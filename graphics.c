@@ -2,6 +2,27 @@
 #include "graphics.h"
 
 int view_width;
+int y_offset;
+int x_offset;
+TTF_Font *numbers_font;
+TTF_Font *font;
+TTF_Font *font_big;
+
+int num_planets;
+int sun_mass;
+int planet_mass_mult;
+int distance;
+
+// buttons
+Button *play_button;
+Button *plus_planet_button;
+Button *minus_planet_button;
+Button *plus_sun_mass_button;
+Button *minus_sun_mass_button;
+Button *plus_planet_mass_button;
+Button *minus_planet_mass_button;
+Button *plus_distance_button;
+Button *minus_distance_button;
 
 
 void renderGraphics(SDL_Renderer *renderer, TTF_Font* font, SolarSystem *solar_system){
@@ -23,15 +44,26 @@ void drawBackground(SDL_Renderer *renderer, TTF_Font* font) {
     SDL_SetRenderDrawColor(renderer, 172, 218, 224, 255);
     SDL_RenderClear(renderer);
     SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
-    SDL_RenderDrawLine(renderer, SCREEN_WIDTH/2, 0, SCREEN_WIDTH/2, SCREEN_HEIGHT);
-    SDL_RenderDrawLine(renderer, 0, SCREEN_HEIGHT/2, SCREEN_WIDTH, SCREEN_HEIGHT/2);
+
+
+    SDL_RenderDrawLine(renderer, translateX(0), 0, translateX(0), SCREEN_HEIGHT);
+    SDL_RenderDrawLine(renderer, 0, translateY(0), SCREEN_WIDTH, translateY(0));
+
+
     SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_BLEND);
     SDL_SetRenderDrawColor(renderer, 0, 0, 0, 50);
-    for (int i = 0; i < 16; i++) {
-        SDL_RenderDrawLine(renderer, 0, i * (SCREEN_HEIGHT / 16), SCREEN_WIDTH, i * (SCREEN_HEIGHT / 16));
-    }
-    for (int i = 0; i < 20; i++) {
-        SDL_RenderDrawLine(renderer, i * (SCREEN_WIDTH / 20), 0, i * (SCREEN_WIDTH / 20), SCREEN_HEIGHT);
+    
+    int num_lines = 20 * view_width / SCREEN_WIDTH;
+
+    for (int i = 0; i < num_lines; i++) {
+        float x = translateX(i * 50);
+        float neg_x = translateX(-1 * i * 50);
+        float y = translateY(i * 50);
+        float neg_y = translateY(-1 * i * 50);
+        SDL_RenderDrawLine(renderer, 0, y, SCREEN_WIDTH, y);
+        SDL_RenderDrawLine(renderer, 0, neg_y, SCREEN_WIDTH, neg_y);
+        SDL_RenderDrawLine(renderer, x, 0, x, SCREEN_HEIGHT);
+        SDL_RenderDrawLine(renderer, neg_x, 0, neg_x, SCREEN_HEIGHT);
     }
 
     if (font == NULL) {
@@ -43,10 +75,10 @@ void drawBackground(SDL_Renderer *renderer, TTF_Font* font) {
 
     
     // numbers in positive x direction
-    for (int i = 0; i < 10; i++) {
-        char num_text[3];
+    for (int i = 0; i < num_lines; i++) {
+        char num_text[10];
         sprintf(num_text, "%d", i);
-        SDL_Surface *textSurface = TTF_RenderText_Solid(font, num_text, textColor);
+        SDL_Surface *textSurface = TTF_RenderText_Solid(numbers_font, num_text, textColor);
         if (textSurface == NULL) {
             printf("Unable to render text surface! SDL_ttf Error: %s\n", TTF_GetError());
             return;
@@ -57,90 +89,50 @@ void drawBackground(SDL_Renderer *renderer, TTF_Font* font) {
             SDL_FreeSurface(textSurface);
             return;
         }
-        int textWidth = textSurface->w;
-        int textHeight = textSurface->h;
-        int x_pos = (SCREEN_WIDTH / 2) + (i * (SCREEN_WIDTH / 20)) + 3;
-        int y_pos = (SCREEN_HEIGHT / 2) + 2;
-        SDL_Rect renderQuad = {x_pos, y_pos, textWidth, textHeight};
-        SDL_RenderCopy(renderer, textTexture, NULL, &renderQuad);
+        char num_text_neg[10];
+        sprintf(num_text_neg, "-%d", i);
+        SDL_Surface *textSurfaceNeg = TTF_RenderText_Solid(numbers_font, num_text_neg, textColor);
+        if (textSurfaceNeg == NULL) {
+            printf("Unable to render text surface! SDL_ttf Error: %s\n", TTF_GetError());
+            return;
+        }
+        SDL_Texture* textTextureNeg = SDL_CreateTextureFromSurface(renderer, textSurfaceNeg);
+        if (textTextureNeg == NULL) {
+            fprintf(stderr, "Unable to create texture from rendered text! SDL Error: %s\n", SDL_GetError());
+            SDL_FreeSurface(textSurfaceNeg);
+            return;
+        }
+
+        int textWidthPos = textSurface->w;
+        int textHeightPos = textSurface->h;
+        int textWidthNeg = textSurfaceNeg->w;
+        int textHeightNeg = textSurfaceNeg->h;
+
+        float x = translateX(i * 50 + 3);
+        float neg_x = translateX(-1 * i * 50);
+        float y = translateY(i * 50 + 3);
+        float neg_y = translateY(-1 * i * 50);
+
+        SDL_Rect renderQuadPosX = {x, translateY(0), textWidthPos, textHeightPos};
+        SDL_Rect renderQuadNegX = {neg_x, translateY(0), textWidthNeg, textHeightNeg};
+        SDL_Rect renderQuadPosY = {translateX(3), y, textWidthPos, textHeightPos};
+        SDL_Rect renderQuadNegY = {translateX(3), neg_y, textWidthNeg, textHeightNeg};
+
+        SDL_RenderCopy(renderer, textTexture, NULL, &renderQuadPosX);
+        if (i != 0) {
+            SDL_RenderCopy(renderer, textTextureNeg, NULL, &renderQuadNegX);
+            SDL_RenderCopy(renderer, textTexture, NULL, &renderQuadPosY);
+            SDL_RenderCopy(renderer, textTextureNeg, NULL, &renderQuadNegY);
+        }
+        
+
         SDL_DestroyTexture(textTexture);
         SDL_FreeSurface(textSurface);
+        SDL_DestroyTexture(textTextureNeg);
+        SDL_FreeSurface(textSurfaceNeg);
+
     }
     
-
-    // numbers in negative x direction
-    for (int i = 1; i < 10; i++) {
-        char num_text[3];
-        sprintf(num_text, "-%d", i);
-        SDL_Surface *textSurface = TTF_RenderText_Solid(font, num_text, textColor);
-        if (textSurface == NULL) {
-            printf("Unable to render text surface! SDL_ttf Error: %s\n", TTF_GetError());
-            return;
-        }
-        SDL_Texture* textTexture = SDL_CreateTextureFromSurface(renderer, textSurface);
-        if (textTexture == NULL) {
-            fprintf(stderr, "Unable to create texture from rendered text! SDL Error: %s\n", SDL_GetError());
-            SDL_FreeSurface(textSurface);
-            return;
-        }
-        int textWidth = textSurface->w;
-        int textHeight = textSurface->h;
-        int x_pos = (SCREEN_WIDTH / 2) - (i * (SCREEN_WIDTH / 20)) + 3;
-        int y_pos = (SCREEN_HEIGHT / 2) + 2;
-        SDL_Rect renderQuad = {x_pos, y_pos, textWidth, textHeight};
-        SDL_RenderCopy(renderer, textTexture, NULL, &renderQuad);
-        SDL_DestroyTexture(textTexture);
-        SDL_FreeSurface(textSurface);
-    }
-
-    // numbers in positive y direction
-    for (int i = 1; i < 8; i++) {
-        char num_text[3];
-        sprintf(num_text, "%d", i);
-        SDL_Surface *textSurface = TTF_RenderText_Solid(font, num_text, textColor);
-        if (textSurface == NULL) {
-            printf("Unable to render text surface! SDL_ttf Error: %s\n", TTF_GetError());
-            return;
-        }
-        SDL_Texture* textTexture = SDL_CreateTextureFromSurface(renderer, textSurface);
-        if (textTexture == NULL) {
-            fprintf(stderr, "Unable to create texture from rendered text! SDL Error: %s\n", SDL_GetError());
-            SDL_FreeSurface(textSurface);
-            return;
-        }
-        int textWidth = textSurface->w;
-        int textHeight = textSurface->h;
-        int x_pos = (SCREEN_WIDTH / 2) + 4;
-        int y_pos = (SCREEN_HEIGHT / 2) - (i * (SCREEN_HEIGHT / 16)) + 2;
-        SDL_Rect renderQuad = {x_pos, y_pos, textWidth, textHeight};
-        SDL_RenderCopy(renderer, textTexture, NULL, &renderQuad);
-        SDL_DestroyTexture(textTexture);
-        SDL_FreeSurface(textSurface);
-    }
-
-    for (int i = 1; i < 8; i++) {
-        char num_text[3];
-        sprintf(num_text, "-%d", i);
-        SDL_Surface *textSurface = TTF_RenderText_Solid(font, num_text, textColor);
-        if (textSurface == NULL) {
-            printf("Unable to render text surface! SDL_ttf Error: %s\n", TTF_GetError());
-            return;
-        }
-        SDL_Texture* textTexture = SDL_CreateTextureFromSurface(renderer, textSurface);
-        if (textTexture == NULL) {
-            fprintf(stderr, "Unable to create texture from rendered text! SDL Error: %s\n", SDL_GetError());
-            SDL_FreeSurface(textSurface);
-            return;
-        }
-        int textWidth = textSurface->w;
-        int textHeight = textSurface->h;
-        int x_pos = (SCREEN_WIDTH / 2) + 4;
-        int y_pos = (SCREEN_HEIGHT / 2) + (i * (SCREEN_HEIGHT / 16)) + 2;
-        SDL_Rect renderQuad = {x_pos, y_pos, textWidth, textHeight};
-        SDL_RenderCopy(renderer, textTexture, NULL, &renderQuad);
-        SDL_DestroyTexture(textTexture);
-        SDL_FreeSurface(textSurface);
-    }
 }
 
 void drawSun(SDL_Renderer *renderer, Star *sun) {
@@ -163,7 +155,7 @@ void drawPlanets(SDL_Renderer *renderer, World **planets, int num_planets) {
     }
 }
 
-void renderMenu(SDL_Renderer *renderer, TTF_Font *font, TTF_Font *font_big, Button *play_button, Button *plus_planet_button, Button *minus_planet_button, int num_planets) {
+void renderMenu(SDL_Renderer *renderer) {
     if (!renderer || !font || !play_button || !plus_planet_button || !minus_planet_button) {
         printf("Error: passed in a null pointer to renderMenu\n");
         return;
@@ -175,52 +167,64 @@ void renderMenu(SDL_Renderer *renderer, TTF_Font *font, TTF_Font *font_big, Butt
     renderButton(renderer, font, *play_button);
     renderButton(renderer, font, *plus_planet_button);
     renderButton(renderer, font, *minus_planet_button);
+    renderButton(renderer, font, *plus_sun_mass_button);
+    renderButton(renderer, font, *minus_sun_mass_button);
+    renderButton(renderer, font, *plus_planet_mass_button);
+    renderButton(renderer, font, *minus_planet_mass_button);
+    renderButton(renderer, font, *plus_distance_button);
+    renderButton(renderer, font, *minus_distance_button);
 
-    SDL_Color textColor = {0, 0, 0, 255};
+    // number of planets
     char num_text[5];
     sprintf(num_text, "%d", num_planets);
-    SDL_Surface *textSurface = TTF_RenderText_Solid(font, num_text, textColor);
-    if (textSurface == NULL) {
-        printf("Unable to render text surface! SDL_ttf Error: %s\n", TTF_GetError());
-        return;
-    }
-    SDL_Texture* textTexture = SDL_CreateTextureFromSurface(renderer, textSurface);
-    if (textTexture == NULL) {
-        fprintf(stderr, "Unable to create texture from rendered text! SDL Error: %s\n", SDL_GetError());
-        SDL_FreeSurface(textSurface);
-        return;
-    }
-    int textWidth = textSurface->w;
-    int textHeight = textSurface->h;
-    int x_pos = (SCREEN_WIDTH / 2) - 5;
-    int y_pos = (SCREEN_HEIGHT / 2) + 30;
-    SDL_Rect renderQuad = {x_pos, y_pos, textWidth, textHeight};
-    SDL_RenderCopy(renderer, textTexture, NULL, &renderQuad);
-    SDL_DestroyTexture(textTexture);
-    SDL_FreeSurface(textSurface);
+    int x_pos = PLUS_PLANET_X + 40;
+    int y_pos = SOLAR_SYSTEM_Y;
+    renderText(renderer, font, x_pos, y_pos, num_text);
+    char *d_num_text = "# planets:";
+    x_pos -= 50;
+    y_pos -= 40;
+    renderText(renderer, font, x_pos, y_pos, d_num_text);
 
+    //  title text
     char *menu_text = "HeavenlyBodies Simulator";
-
-    SDL_Surface *menuTextSurface = TTF_RenderText_Solid(font_big, menu_text, textColor);
-    if (menuTextSurface == NULL) {
-        printf("Unable to render text surface! SDL_ttf Error: %s\n", TTF_GetError());
-        return;
-    }
-    SDL_Texture* menuTextTexture = SDL_CreateTextureFromSurface(renderer, menuTextSurface);
-    if (menuTextTexture == NULL) {
-        fprintf(stderr, "Unable to create texture from rendered text! SDL Error: %s\n", SDL_GetError());
-        SDL_FreeSurface(menuTextSurface);
-        return;
-    }
-    textWidth = menuTextSurface->w;
-    textHeight = menuTextSurface->h;
     x_pos = 160;
     y_pos = 120;
-    SDL_Rect menuRenderQuad = {x_pos, y_pos, textWidth, textHeight};
-    SDL_RenderCopy(renderer, menuTextTexture, NULL, &menuRenderQuad);
-    SDL_DestroyTexture(menuTextTexture);
-    SDL_FreeSurface(menuTextSurface);
+    renderText(renderer, font_big, x_pos, y_pos, menu_text);
+
+    // sun mass text
+    char sun_mass_text[10];
+    sprintf(sun_mass_text, "%d", (int)sun_mass);
+    x_pos = PLUS_SUNMASS_X + 40;
+    y_pos = SOLAR_SYSTEM_Y;
+    renderText(renderer, font, x_pos, y_pos, sun_mass_text);
+    char *d_sun_mass_text = "Sun mass:";
+    x_pos -= 50;
+    y_pos -= 40;
+    renderText(renderer, font, x_pos, y_pos, d_sun_mass_text);
+
+    // planet mass text
+    char planet_mass_text[10];
+    sprintf(planet_mass_text, "%d", (int)planet_mass_mult);
+    x_pos = PLUS_PLANETMASS_X + 40;
+    y_pos = SOLAR_SYSTEM_Y;
+    renderText(renderer, font, x_pos, y_pos, planet_mass_text);
+    char *d_planet_mass_text = "planet mass mult:";
+    x_pos -= 50;
+    y_pos -= 40;
+    renderText(renderer, font, x_pos, y_pos, d_planet_mass_text);
+
+    // distance text
+    char distance_text[10];
+    x_pos = PLUS_DISTANCE_X + 40;
+    y_pos = SOLAR_SYSTEM_Y;
+    sprintf(distance_text, "%d", (int)distance);
+    renderText(renderer, font, x_pos, y_pos, distance_text);
+    char *d_distance_text = "Distance interval:";
+    x_pos -= 50;
+    y_pos -= 40;
+    renderText(renderer, font, x_pos, y_pos, d_distance_text);
 }
+
 
 void renderButton(SDL_Renderer *renderer, TTF_Font *font, Button button) {
     SDL_Color color = button.isHovered ? (SDL_Color){200, 200, 200, 255} : button.color;
@@ -238,6 +242,27 @@ void renderButton(SDL_Renderer *renderer, TTF_Font *font, Button button) {
     SDL_FreeSurface(surface);
     SDL_DestroyTexture(texture);
 
+}
+
+void renderText(SDL_Renderer *renderer, TTF_Font *font, int x, int y, char *text) {
+    SDL_Color textColor = {0, 0, 0, 255};
+    SDL_Surface *textSurface = TTF_RenderText_Solid(font, text, textColor);
+    if (textSurface == NULL) {
+        printf("Unable to render text surface! SDL_ttf Error: %s\n", TTF_GetError());
+        return;
+    }
+    SDL_Texture* textTexture = SDL_CreateTextureFromSurface(renderer, textSurface);
+    if (textTexture == NULL) {
+        fprintf(stderr, "Unable to create texture from rendered text! SDL Error: %s\n", SDL_GetError());
+        SDL_FreeSurface(textSurface);
+        return;
+    }
+    int textWidth = textSurface->w;
+    int textHeight = textSurface->h;
+    SDL_Rect renderQuad = {x, y, textWidth, textHeight};
+    SDL_RenderCopy(renderer, textTexture, NULL, &renderQuad);
+    SDL_DestroyTexture(textTexture);
+    SDL_FreeSurface(textSurface);
 }
 
 void renderTimeFrame(SDL_Renderer *renderer, TTF_Font *font, float time) {
@@ -266,31 +291,35 @@ void renderTimeFrame(SDL_Renderer *renderer, TTF_Font *font, float time) {
 }
 
 void zoomOut() {
-    view_width += 200;
+    view_width *= 1.2;
+    numbers_font = TTF_OpenFont("./Basic-Regular.ttf", 24 * SCREEN_WIDTH / view_width);
 }
 
 void zoomIn() {
-    view_width -= 200;
+    view_width *= 0.8;
+    numbers_font = TTF_OpenFont("./Basic-Regular.ttf", 24 * SCREEN_WIDTH / view_width);
 }
 
 float translateX(float x) {
     float test2 = (SCREEN_WIDTH/2);
     float test3 = (view_width/2);
     float test4 = test2 / test3;
-    return SCREEN_WIDTH/2 + (x * test4);
+    float ret = SCREEN_WIDTH/2 + (x * test4);
+    return ret + x_offset;
 }
 
 float translateY(float y) {
     float test2 = (SCREEN_HEIGHT/2);
     float test3 = ((view_width * SCREEN_RATIO)/2);
     float test4 = test2 / test3;
-    return SCREEN_HEIGHT/2 - (y * test4);
+    float ret = SCREEN_HEIGHT/2 - (y * test4);
+    return ret + y_offset;
 }
 
 float translateR(float r) {
     float t1 = (SCREEN_WIDTH / view_width);
-    printf("%f\n",t1);
-    return r * t1;
+    float ret = r * t1;
+    return ret;
 }
 
 

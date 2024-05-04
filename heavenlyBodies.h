@@ -61,7 +61,7 @@ typedef struct SystemPlayback {
 
 World *createPlanet(char *name, float x_coord, float y_coord, float x_vel, float y_vel,float radius, float mass, float *em_field_strength, int water, int life);
 Star *createStar(char *name, float x_coord, float y_coord, float x_vel, float y_vel,float radius, float mass, float *em_field_strength);
-SolarSystem *createHomogenousSolarSystem(int num_planets, float interval, int distance);
+SolarSystem *createHomogenousSolarSystem(int num_planets, float interval, int distance, int sun_mass, int planet_mass_mult);
 SolarSystem *createChaoticSolarSystem(int num_planets, float interval, int distance);
 SolarSystem *createTwoBodySystem();
 SolarSystem *createTwoPlanetSystem();

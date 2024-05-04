@@ -3,12 +3,23 @@
 State state;
 extern SDL_bool done;
 extern int view_width;
+extern int x_offset;
+extern int y_offset;
 
 // menu stuff
-Button *play_button;
-Button *plus_planet_button;
-Button *minus_planet_button;
-int num_planets;
+extern Button *play_button;
+extern Button *plus_planet_button;
+extern Button *minus_planet_button;
+extern int num_planets;
+extern Button *plus_sun_mass_button;
+extern Button *minus_sun_mass_button;
+extern int sun_mass;
+extern Button *plus_planet_mass_button;
+extern Button *minus_planet_mass_button;
+extern int planet_mass_mult;
+extern Button *plus_distance_button;
+extern Button *minus_distance_button;
+extern int distance;
 
 // play stuff
 Button *end_button;
@@ -30,15 +41,27 @@ void mainLoop(float deltaTime, SDL_Renderer *renderer, TTF_Font *font, TTF_Font 
     switch (state) {
     case MENU_INIT: {
         view_width = SCREEN_WIDTH;
+        x_offset = 0;
+        y_offset = 0;
         num_planets = 1;
+        sun_mass = 5000;
+        planet_mass_mult = 1;
+        distance = 50;
         SDL_Color color = (SDL_Color){255, 255, 255, 255};
-        play_button = createButton(SCREEN_WIDTH / 2 - 40, SCREEN_HEIGHT / 2 - 40, 80, 40, "Play", color);
-        plus_planet_button = createButton(SCREEN_WIDTH / 2 + 20, SCREEN_HEIGHT / 2 + 30, 30, 30, "+", color);
-        minus_planet_button = createButton(SCREEN_WIDTH / 2 - 50, SCREEN_HEIGHT / 2 + 30, 30, 30, "-", color);
+        play_button = createButton(PLAY_BUTTON_X, PLAY_BUTTON_Y, 80, 40, "Play", color);
+        plus_planet_button = createButton(PLUS_PLANET_X, SOLAR_SYSTEM_Y, 30, 30, "+", color);
+        minus_planet_button = createButton(MINUS_PLANET_X, SOLAR_SYSTEM_Y, 30, 30, "-", color);
+        plus_sun_mass_button = createButton(PLUS_SUNMASS_X, SOLAR_SYSTEM_Y, 30, 30, "+", color);
+        minus_sun_mass_button = createButton(MINUS_SUNMASS_X, SOLAR_SYSTEM_Y, 30, 30, "-", color);
+        plus_planet_mass_button = createButton(PLUS_PLANETMASS_X, SOLAR_SYSTEM_Y, 30, 30, "+", color);
+        minus_planet_mass_button = createButton(MINUS_PLANETMASS_X, SOLAR_SYSTEM_Y, 30, 30, "-", color);
+        plus_distance_button = createButton(PLUS_DISTANCE_X, SOLAR_SYSTEM_Y, 30, 30, "+", color);
+        minus_distance_button = createButton(MINUS_DISTANCE_X, SOLAR_SYSTEM_Y, 30, 30, "-", color);
         state = MENU;
         break;}
     case MENU: {
-        renderMenu(renderer, font, font_big, play_button, plus_planet_button, minus_planet_button, num_planets);
+        renderMenu(renderer);
+        
         break;}
     case PLAY_INIT: {
         SDL_Color color = (SDL_Color){255, 255, 255, 255};
@@ -105,7 +128,7 @@ void mainLoop(float deltaTime, SDL_Renderer *renderer, TTF_Font *font, TTF_Font 
 }
 
 SolarSystem *initializeSystem() {
-    SolarSystem *solar_system = createHomogenousSolarSystem(num_planets, PI / 3, 20);
+    SolarSystem *solar_system = createHomogenousSolarSystem(num_planets, PI / 3, distance, sun_mass, planet_mass_mult);
     //solar_system = createChaoticSolarSystem(100, PI / 10, 10);
     //solar_system = createTwoBodySystem();
     //solar_system = createTwoPlanetSystem();
@@ -126,43 +149,89 @@ void handleEvent(SDL_Event *event) {
     case PLAY_INIT: break;
     case PLAY: {
         handlePlayButtonEvent(event);
+        handleKeyboardEvent(event);
         break;}
     case PLAYBACK_INIT: break;
     case PLAYBACK: {
         handlePlaybackButtonEvent(event);
+        handleKeyboardEvent(event);
         break;}
     case PLAYBACK_PAUSE_INIT: break;
     case PLAYBACK_PAUSE: {
         handlePauseButtonEvent(event);
+        handleKeyboardEvent(event);
         break;}
+    }
+}
+
+void handleKeyboardEvent(SDL_Event *event) {
+    if (event->type == SDL_KEYDOWN) {
+        switch (event->key.keysym.sym) {
+        case SDLK_UP:
+            y_offset += 20;
+            break;
+        case SDLK_DOWN:
+            y_offset -= 20;
+            break;
+        case SDLK_LEFT:
+            x_offset += 20;
+            break;
+        case SDLK_RIGHT:
+            x_offset -= 20;
+            break;
+        }
     }
 }
 
 void handleMenuButtonEvent(SDL_Event *event) {
     if (event->type == SDL_MOUSEMOTION) {
-        int x = event->motion.x;
-        int y = event->motion.y;
         // play button
-        play_button->isHovered = (x >= play_button->rect.x && x <= play_button->rect.x + play_button->rect.w &&
-                             y >= play_button->rect.y && y <= play_button->rect.y + play_button->rect.h);
-        // plus planet button
-        plus_planet_button->isHovered = (x >= plus_planet_button->rect.x && x <= plus_planet_button->rect.x + plus_planet_button->rect.w &&
-                             y >= plus_planet_button->rect.y && y <= plus_planet_button->rect.y + plus_planet_button->rect.h);
-        // minus planet button
-        minus_planet_button->isHovered = (x >= minus_planet_button->rect.x && x <= minus_planet_button->rect.x + minus_planet_button->rect.w &&
-                             y >= minus_planet_button->rect.y && y <= minus_planet_button->rect.y + minus_planet_button->rect.h);
-    } else if (event->type == SDL_MOUSEBUTTONDOWN) {
+        buttonIsHovered(play_button, event);
+        buttonIsHovered(plus_planet_button, event);
+        buttonIsHovered(minus_planet_button, event);
+        buttonIsHovered(plus_sun_mass_button, event);
+        buttonIsHovered(minus_sun_mass_button, event);
+        buttonIsHovered(plus_planet_mass_button, event);
+        buttonIsHovered(minus_planet_mass_button, event);
+        buttonIsHovered(plus_distance_button, event);
+        buttonIsHovered(minus_distance_button, event);
+
+    } else if (event->type == SDL_MOUSEBUTTONDOWN && event->button.button == SDL_BUTTON_LEFT) {
         // play button
-        if (play_button->isHovered && event->button.button == SDL_BUTTON_LEFT) {
+        if (play_button->isHovered) {
             state = PLAY_INIT;
         }
         // plus planet button
-        if (plus_planet_button->isHovered && event->button.button == SDL_BUTTON_LEFT) {
+        if (plus_planet_button->isHovered) {
             num_planets++;
         }
         // minus planet button
-        if (minus_planet_button->isHovered && event->button.button == SDL_BUTTON_LEFT && num_planets > 1) {
+        if (minus_planet_button->isHovered && num_planets > 1) {
             num_planets--;
+        }
+
+        if (plus_sun_mass_button->isHovered) {
+            sun_mass += 500;
+        }
+
+        if (minus_sun_mass_button->isHovered) {
+            sun_mass -= 500;
+        }
+
+        if (plus_planet_mass_button->isHovered) {
+            planet_mass_mult += 1;
+        }
+
+        if (minus_planet_mass_button->isHovered) {
+            planet_mass_mult -= 1;
+        }
+
+        if (plus_distance_button->isHovered) {
+            distance += 5;
+        }
+
+        if (minus_distance_button->isHovered) {
+            distance -= 5;
         }
 
     }
@@ -170,18 +239,10 @@ void handleMenuButtonEvent(SDL_Event *event) {
 
 void handlePlayButtonEvent(SDL_Event *event) {
     if (event->type == SDL_MOUSEMOTION) {
-        int x = event->motion.x;
-        int y = event->motion.y;
-        // end button
-        end_button->isHovered = (x >= end_button->rect.x && x <= end_button->rect.x + end_button->rect.w &&
-                             y >= end_button->rect.y && y <= end_button->rect.y + end_button->rect.h);
-
-        zoom_out_button->isHovered = (x >= zoom_out_button->rect.x && x <= zoom_out_button->rect.x + zoom_out_button->rect.w &&
-                             y >= zoom_out_button->rect.y && y <= zoom_out_button->rect.y + zoom_out_button->rect.h);
-    
-        zoom_in_button->isHovered = (x >= zoom_in_button->rect.x && x <= zoom_in_button->rect.x + zoom_in_button->rect.w &&
-                             y >= zoom_in_button->rect.y && y <= zoom_in_button->rect.y + zoom_in_button->rect.h);
-    
+        buttonIsHovered(end_button, event);
+        buttonIsHovered(zoom_out_button, event);
+        buttonIsHovered(zoom_in_button, event);
+        
     } else if (event->type == SDL_MOUSEBUTTONDOWN) {
         // end button
         if (end_button->isHovered && event->button.button == SDL_BUTTON_LEFT) {
@@ -201,24 +262,13 @@ void handlePlayButtonEvent(SDL_Event *event) {
 
 void handlePlaybackButtonEvent(SDL_Event *event) {
     if (event->type == SDL_MOUSEMOTION) {
-        int x = event->motion.x;
-        int y = event->motion.y;
-        // pause button
-        pause_button->isHovered = (x >= pause_button->rect.x && x <= pause_button->rect.x + pause_button->rect.w &&
-                             y >= pause_button->rect.y && y <= pause_button->rect.y + pause_button->rect.h);
-    
-        menu_button->isHovered = (x >= menu_button->rect.x && x <= menu_button->rect.x + menu_button->rect.w &&
-                             y >= menu_button->rect.y && y <= menu_button->rect.y + menu_button->rect.h);
-    
-        zoom_out_button->isHovered = (x >= zoom_out_button->rect.x && x <= zoom_out_button->rect.x + zoom_out_button->rect.w &&
-                             y >= zoom_out_button->rect.y && y <= zoom_out_button->rect.y + zoom_out_button->rect.h);
-    
-        zoom_in_button->isHovered = (x >= zoom_in_button->rect.x && x <= zoom_in_button->rect.x + zoom_in_button->rect.w &&
-                             y >= zoom_in_button->rect.y && y <= zoom_in_button->rect.y + zoom_in_button->rect.h);
-    
+        buttonIsHovered(pause_button, event);
+        buttonIsHovered(menu_button, event);
+        buttonIsHovered(zoom_out_button, event);
+        buttonIsHovered(zoom_in_button, event);
     } else if (event->type == SDL_MOUSEBUTTONDOWN) {
 
-        // pause button
+        
         if (pause_button->isHovered && event->button.button == SDL_BUTTON_LEFT) {
             state = PLAYBACK_PAUSE_INIT;
         }
@@ -240,27 +290,12 @@ void handlePlaybackButtonEvent(SDL_Event *event) {
 
 void handlePauseButtonEvent(SDL_Event *event) {
     if (event->type == SDL_MOUSEMOTION) {
-        int x = event->motion.x;
-        int y = event->motion.y;
-        // play button
-        play_button->isHovered = (x >= play_button->rect.x && x <= play_button->rect.x + play_button->rect.w &&
-                             y >= play_button->rect.y && y <= play_button->rect.y + play_button->rect.h);
-        // plus button
-        plus_frame_button->isHovered = (x >= plus_frame_button->rect.x && x <= plus_frame_button->rect.x + plus_frame_button->rect.w &&
-                             y >= plus_frame_button->rect.y && y <= plus_frame_button->rect.y + plus_frame_button->rect.h);
-        // minus button
-        minus_frame_button->isHovered = (x >= minus_frame_button->rect.x && x <= minus_frame_button->rect.x + minus_frame_button->rect.w &&
-                             y >= minus_frame_button->rect.y && y <= minus_frame_button->rect.y + minus_frame_button->rect.h);
-        
-        menu_button->isHovered = (x >= menu_button->rect.x && x <= menu_button->rect.x + menu_button->rect.w &&
-                             y >= menu_button->rect.y && y <= menu_button->rect.y + menu_button->rect.h);
-        
-        zoom_out_button->isHovered = (x >= zoom_out_button->rect.x && x <= zoom_out_button->rect.x + zoom_out_button->rect.w &&
-                             y >= zoom_out_button->rect.y && y <= zoom_out_button->rect.y + zoom_out_button->rect.h);
-    
-        zoom_in_button->isHovered = (x >= zoom_in_button->rect.x && x <= zoom_in_button->rect.x + zoom_in_button->rect.w &&
-                             y >= zoom_in_button->rect.y && y <= zoom_in_button->rect.y + zoom_in_button->rect.h);
-    
+        buttonIsHovered(play_button, event);
+        buttonIsHovered(plus_frame_button, event);
+        buttonIsHovered(minus_frame_button, event);
+        buttonIsHovered(menu_button, event);
+        buttonIsHovered(zoom_out_button, event);
+        buttonIsHovered(zoom_in_button, event);
 
     } else if (event->type == SDL_MOUSEBUTTONDOWN) {
         // play button
@@ -289,6 +324,13 @@ void handlePauseButtonEvent(SDL_Event *event) {
         }
         
     }
+}
+
+void buttonIsHovered(Button *button, SDL_Event *event) {
+    int x = event->motion.x;
+    int y = event->motion.y;
+    button->isHovered = (x >= button->rect.x && x <= button->rect.x + button->rect.w &&
+                             y >= button->rect.y && y <= button->rect.y + button->rect.h);
 }
 
 Button *createButton(int x, int y, int w, int h, const char *text, SDL_Color color) {

@@ -7,8 +7,9 @@ float elapsedTicks;
 extern State state;
 SDL_bool done;
 SDL_Renderer *renderer;
-TTF_Font *font;
-TTF_Font *font_big;
+extern TTF_Font *font;
+extern TTF_Font *font_big;
+extern TTF_Font *numbers_font;
 
 int main(void) {
     
@@ -38,6 +39,7 @@ int main(void) {
     }
     state = MENU_INIT;
     font = TTF_OpenFont("./Basic-Regular.ttf", 24);
+    numbers_font = TTF_OpenFont("./Basic-Regular.ttf", 24);
     font_big = TTF_OpenFont("./Basic-Regular.ttf", 60);
     lastTick = SDL_GetTicks();
     deltaTime = 0.0f;

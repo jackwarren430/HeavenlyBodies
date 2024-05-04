@@ -149,7 +149,7 @@ Star *createStar(char *name, float x_coord, float y_coord, float x_vel, float y_
  * 
  **/
 
-SolarSystem *createHomogenousSolarSystem(int num_planets, float interval, int distance) {
+SolarSystem *createHomogenousSolarSystem(int num_planets, float interval, int distance, int sun_mass, int planet_mass_mult) {
     SolarSystem *system = (SolarSystem *)malloc(sizeof(SolarSystem));
     if (!system) {
         printf("Failed to create SolarSystem: malloc error\n");
@@ -164,8 +164,9 @@ SolarSystem *createHomogenousSolarSystem(int num_planets, float interval, int di
     float x_vel = 0.0f;
     float y_vel = 0.0f;
 
-    float radius = 15;
-    float mass = 5000.0f;
+    
+    float mass = (float)sun_mass;
+    float radius = sun_mass * 0.005f;
     Star *sun = createStar(sun_name, x_coord, y_coord, x_vel, y_vel, radius, mass, NULL);
     if (!sun) {
         free(system);
@@ -183,7 +184,7 @@ SolarSystem *createHomogenousSolarSystem(int num_planets, float interval, int di
         printf("Failed to create SolarSystem: malloc error\n");
         return NULL;
     }
-    
+    distance += radius;
     for (int i = 0; i < num_planets; i++) {
         char new_planet_name[15];
         sprintf(new_planet_name, "planet_%d", i);
@@ -191,8 +192,8 @@ SolarSystem *createHomogenousSolarSystem(int num_planets, float interval, int di
         while (theta >= 2 * PI) {
             theta -= 2 * PI;
         }
-        x_coord = ((i+1)*distance)*cos(theta) + 20;
-        y_coord = ((i+1)*distance)*sin(theta) + 20;
+        x_coord = ((i+1)*distance)*cos(theta);
+        y_coord = ((i+1)*distance)*sin(theta);
 
         float distance_c = sqrt(pow(x_coord, 2) + pow(y_coord, 2));
         float x_vel = 0.0;
@@ -212,10 +213,9 @@ SolarSystem *createHomogenousSolarSystem(int num_planets, float interval, int di
             strcpy(new_planet_name, new_planet_target);
         }
         
-
         
-        float mass = i + 1;
-        float radius = mass * 0.3f + 7;
+        float mass = planet_mass_mult * (i + 1);
+        float radius = mass * 0.1f + 10;
         World *new_planet = createPlanet(new_planet_name, x_coord, y_coord, x_vel, y_vel, radius, mass, NULL, 0, 0);
         if (!new_planet) {
             free(system->sun->name);
