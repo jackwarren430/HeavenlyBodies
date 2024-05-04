@@ -20,9 +20,12 @@
 
 //  button positions
 #define PLAY_BUTTON_X SCREEN_WIDTH / 2 - 40
-#define PLAY_BUTTON_Y SCREEN_HEIGHT / 2 - 40
-#define SOLAR_SYSTEM_Y SCREEN_HEIGHT / 2 + 150
+#define PLAY_BUTTON_Y SCREEN_HEIGHT / 2 - 100
+#define SOLAR_SYSTEM_Y SCREEN_HEIGHT / 2 + 170
 
+#define NEXT_BUTTON_Y SCREEN_HEIGHT / 2 + 30
+#define NEXT_BUTTON_X SCREEN_WIDTH / 2 + 150
+#define PREV_BUTTON_X SCREEN_WIDTH / 2 - 150
 #define PLUS_PLANET_X SCREEN_WIDTH / 5 - 50
 #define MINUS_PLANET_X SCREEN_WIDTH / 5 + 30
 #define PLUS_SUNMASS_X 2 * SCREEN_WIDTH / 5 - 50
@@ -38,6 +41,12 @@ typedef struct {
     SDL_Color color;
     SDL_bool isHovered;
 } Button;
+
+typedef enum {
+    HOMOGENOUS,
+    CHAOTIC,
+    MOONS,
+} SystemState;
 
 void renderGraphics(SDL_Renderer *renderer, TTF_Font* font, SolarSystem *solar_system);
 void drawSun(SDL_Renderer *renderer, Star *sun);

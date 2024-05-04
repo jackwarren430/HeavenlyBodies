@@ -14,6 +14,7 @@ typedef enum {
 
 
 
+
 SolarSystem *initializeSystem();
 void mainLoop(float deltaTime, SDL_Renderer *renderer, TTF_Font *font, TTF_Font *font_big);
 SolarSystem *initializeSystem();

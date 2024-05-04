@@ -12,6 +12,7 @@ int num_planets;
 int sun_mass;
 int planet_mass_mult;
 int distance;
+SystemState system_type;
 
 // buttons
 Button *play_button;
@@ -23,6 +24,8 @@ Button *plus_planet_mass_button;
 Button *minus_planet_mass_button;
 Button *plus_distance_button;
 Button *minus_distance_button;
+Button *next_button;
+Button *prev_button;
 
 
 void renderGraphics(SDL_Renderer *renderer, TTF_Font* font, SolarSystem *solar_system){
@@ -173,6 +176,9 @@ void renderMenu(SDL_Renderer *renderer) {
     renderButton(renderer, font, *minus_planet_mass_button);
     renderButton(renderer, font, *plus_distance_button);
     renderButton(renderer, font, *minus_distance_button);
+    renderButton(renderer, font, *next_button);
+    renderButton(renderer, font, *prev_button);
+
 
     // number of planets
     char num_text[5];
@@ -223,6 +229,27 @@ void renderMenu(SDL_Renderer *renderer) {
     x_pos -= 50;
     y_pos -= 40;
     renderText(renderer, font, x_pos, y_pos, d_distance_text);
+
+
+    x_pos = PREV_BUTTON_X + 70;
+    y_pos = NEXT_BUTTON_Y;
+    char *type_text;
+    switch (system_type) {
+    case HOMOGENOUS:
+        type_text = "Homogenous";
+        break;
+    case CHAOTIC:
+        type_text = "Chaotic";
+        break;
+    case MOONS:
+        type_text = "Moons";
+        break;
+    }
+    renderText(renderer, font, x_pos, y_pos, type_text);
+    char *d_type_text = "System Type:";
+    x_pos += 30;
+    y_pos -= 40;
+    renderText(renderer, font, x_pos, y_pos, d_type_text);
 }
 
 

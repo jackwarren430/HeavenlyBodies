@@ -2,15 +2,6 @@
 #include "heavenlyBodies.h"
 
 
-void updateSystemLife(SolarSystem *solar_system, float deltaTime) {
-
-}
-
-void calculateLifeEnergy(World *planet) {
-
-}
-
-
 SystemPlayback *initializePlayback(SolarSystem *system) {
     SystemPlayback *playback = (SystemPlayback *)malloc(sizeof(SystemPlayback));
     if (!playback) {
@@ -62,7 +53,7 @@ int updatePlayback(SolarSystem *system, SystemPlayback *playback, float cur_time
 
 void deepCopySystem(SolarSystem *dst_system, SolarSystem *src_system) {
     Star *new_star = createStar(src_system->sun->name, src_system->sun->coordinates[0], src_system->sun->coordinates[1],
-        src_system->sun->velocity[0], src_system->sun->velocity[1], src_system->sun->radius, src_system->sun->mass, &src_system->sun->em_field_strength);
+        src_system->sun->velocity[0], src_system->sun->velocity[1], src_system->sun->radius, src_system->sun->mass);
     if (!new_star) {
         return;
     }
@@ -74,7 +65,7 @@ void deepCopySystem(SolarSystem *dst_system, SolarSystem *src_system) {
     for (int i = 0; i < src_system->num_planets; i++) {
         World *src_planet = src_system->planets[i];
         World *new_planet = createPlanet(src_planet->name, src_planet->coordinates[0], src_planet->coordinates[1],
-            src_planet->velocity[0], src_planet->velocity[1], src_planet->radius, src_planet->mass, &src_planet->em_field_strength, src_planet->water, src_planet->life);
+            src_planet->velocity[0], src_planet->velocity[1], src_planet->radius, src_planet->mass);
         if (!new_planet) {
             return;
         }
@@ -85,7 +76,7 @@ void deepCopySystem(SolarSystem *dst_system, SolarSystem *src_system) {
 }
 
 
-World *createPlanet(char *name, float x_coord, float y_coord, float x_vel, float y_vel, float radius, float mass, float *em_field_strength, int water, int life) {
+World *createPlanet(char *name, float x_coord, float y_coord, float x_vel, float y_vel, float radius, float mass) {
     if (!name) {
         return NULL;
     }
@@ -105,17 +96,10 @@ World *createPlanet(char *name, float x_coord, float y_coord, float x_vel, float
     planet_x->velocity[1] = y_vel;
     planet_x->radius = radius;
     planet_x->mass = mass;
-    if (em_field_strength) {
-        planet_x->em_field_strength = *em_field_strength;
-    } else {
-        planet_x->em_field_strength = 1;
-    }
-    planet_x->water = water;
-    planet_x->life = life;
     return planet_x;
 }
 
-Star *createStar(char *name, float x_coord, float y_coord, float x_vel, float y_vel, float radius, float mass, float *em_field_strength) {
+Star *createStar(char *name, float x_coord, float y_coord, float x_vel, float y_vel, float radius, float mass) {
     if (!name) {
         return NULL;
     }
@@ -135,11 +119,6 @@ Star *createStar(char *name, float x_coord, float y_coord, float x_vel, float y_
     star_x->velocity[1] = y_vel;
     star_x->radius = radius;
     star_x->mass = mass;
-    if (em_field_strength) {
-        star_x->em_field_strength = *em_field_strength;
-    } else {
-        star_x->em_field_strength = 1;
-    }
     return star_x;
 }
 
@@ -167,7 +146,7 @@ SolarSystem *createHomogenousSolarSystem(int num_planets, float interval, int di
     
     float mass = (float)sun_mass;
     float radius = sun_mass * 0.005f;
-    Star *sun = createStar(sun_name, x_coord, y_coord, x_vel, y_vel, radius, mass, NULL);
+    Star *sun = createStar(sun_name, x_coord, y_coord, x_vel, y_vel, radius, mass);
     if (!sun) {
         free(system);
         printf("Failed to create SolarSystem: malloc error\n");
@@ -184,8 +163,97 @@ SolarSystem *createHomogenousSolarSystem(int num_planets, float interval, int di
         printf("Failed to create SolarSystem: malloc error\n");
         return NULL;
     }
-    distance += radius;
+    
     for (int i = 0; i < num_planets; i++) {
+        char new_planet_name[15];
+        sprintf(new_planet_name, "planet_%d", i);
+
+        int r = rand() % (60);
+        float theta = r * PI / 30;
+        while (theta >= 2 * PI) {
+            theta -= 2 * PI;
+        }
+
+        x_coord = ((i+1)*distance)*cos(theta);
+        y_coord = ((i+1)*distance)*sin(theta);
+
+        float distance_c = sqrt(pow(x_coord, 2) + pow(y_coord, 2));
+        float x_vel = 0.0;
+        float y_vel = 0.0;
+        float offset = 0;
+        float velocity = sqrt(G * system->sun->mass / distance_c) + offset;
+
+        x_vel = velocity*sin(theta);
+        y_vel = velocity*cos(theta);
+
+        
+
+        if (theta != 0 && theta != PI) {
+            x_vel *= -1;
+        } else {
+            char *new_planet_target = "target";
+            strcpy(new_planet_name, new_planet_target);
+        }
+        
+        
+        float mass = planet_mass_mult * (i + 1);
+        float radius = mass * 0.1f + 10;
+        World *new_planet = createPlanet(new_planet_name, x_coord, y_coord, x_vel, y_vel, radius, mass);
+        if (!new_planet) {
+            free(system->sun->name);
+            free(system->sun);
+            free(system);
+            for (int j = i - 1; j >= 0; j--) {
+                free(planets[j]->name);
+                free(planets[j]);
+            }
+            free(planets);
+            printf("Failed to create SolarSystem: malloc error\n");
+            return NULL;
+        }
+        planets[i] = new_planet;
+    }
+    system->planets = planets;
+    system->num_planets = num_planets;
+    return system;
+}
+
+SolarSystem *createMoonSystem(int num_planets, float interval, int distance, int sun_mass, int planet_mass_mult) {
+    SolarSystem *system = (SolarSystem *)malloc(sizeof(SolarSystem));
+    if (!system) {
+        printf("Failed to create SolarSystem: malloc error\n");
+        return NULL;
+    }
+
+    // Create Sun
+    char *sun_name = "Helius";
+
+    float x_coord = 0.0f;
+    float y_coord = 0.0f;
+    float x_vel = 0.0f;
+    float y_vel = 0.0f;
+
+    
+    float mass = (float)sun_mass;
+    float radius = sun_mass * 0.005f;
+    Star *sun = createStar(sun_name, x_coord, y_coord, x_vel, y_vel, radius, mass);
+    if (!sun) {
+        free(system);
+        printf("Failed to create SolarSystem: malloc error\n");
+        return NULL;
+    }
+    system->sun = sun;
+
+    //Create planets
+    World **planets = (World **)malloc(2 * num_planets * sizeof(World*));
+    if (!planets) {
+        free(system->sun->name);
+        free(system->sun);
+        free(system);
+        printf("Failed to create SolarSystem: malloc error\n");
+        return NULL;
+    }
+    for (int i = 0; i < num_planets * 2; i++) {
         char new_planet_name[15];
         sprintf(new_planet_name, "planet_%d", i);
         float theta = i * interval;
@@ -214,9 +282,9 @@ SolarSystem *createHomogenousSolarSystem(int num_planets, float interval, int di
         }
         
         
-        float mass = planet_mass_mult * (i + 1);
+        float mass = planet_mass_mult * (i + 1) * 10;
         float radius = mass * 0.1f + 10;
-        World *new_planet = createPlanet(new_planet_name, x_coord, y_coord, x_vel, y_vel, radius, mass, NULL, 0, 0);
+        World *new_planet = createPlanet(new_planet_name, x_coord, y_coord, x_vel, y_vel, radius, mass);
         if (!new_planet) {
             free(system->sun->name);
             free(system->sun);
@@ -230,69 +298,36 @@ SolarSystem *createHomogenousSolarSystem(int num_planets, float interval, int di
             return NULL;
         }
         planets[i] = new_planet;
+        i++;
+
+        char new_moon_name[15];
+        sprintf(new_moon_name, "planet_%d", i);
+
+        y_coord += 40 + new_planet->radius;
+
+        distance_c = 40 + new_planet->radius;
+        velocity = sqrt(G * new_planet->mass / distance_c);
+        x_vel -= velocity;
+
+        mass /= 10;
+        radius = mass * 0.1f + 10;;
+        World *new_moon = createPlanet(new_moon_name, x_coord, y_coord, x_vel, y_vel, radius, mass);
+        if (!new_moon) {
+            free(system->sun->name);
+            free(system->sun);
+            free(system);
+            for (int j = i - 1; j >= 0; j--) {
+                free(planets[j]->name);
+                free(planets[j]);
+            }
+            free(planets);
+            printf("Failed to create SolarSystem: malloc error\n");
+            return NULL;
+        }
+        planets[i] = new_moon;
     }
     system->planets = planets;
-    system->num_planets = num_planets;
-    return system;
-}
-
-SolarSystem *createMoonSystem() {
-    SolarSystem *system = (SolarSystem *)malloc(sizeof(SolarSystem));
-    if (!system) {
-        printf("Failed to create SolarSystem: malloc error\n");
-        return NULL;
-    }
-
-    // Create Sun
-    char *sun_name = "Helius";
-
-    int x_coord = 0;
-    int y_coord = 0;
-    float x_vel = 0;
-    float y_vel = 0;
-
-    float radius = 10;
-    float mass = 1000.0f;
-    Star *sun = createStar(sun_name, x_coord, y_coord, x_vel, y_vel, radius, mass, NULL);
-    if (!sun) {
-        free(system);
-        printf("Failed to create SolarSystem: malloc error\n");
-        return NULL;
-    }
-    system->sun = sun;
-
-    //Create planets
-    World **planets = (World **)malloc(sizeof(World*));
-    if (!planets) {
-        free(system->sun->name);
-        free(system->sun);
-        free(system);
-        printf("Failed to create SolarSystem: malloc error\n");
-        return NULL;
-    }
-    
-    char new_planet_name[15];
-    sprintf(new_planet_name, "planet_%d", 1);
-
-    x_coord = 100;
-    y_coord = 0;
-    x_vel = 0;
-    y_vel = 0;
-
-    radius = 5;
-    mass = 1.0f;
-    World *new_planet = createPlanet(new_planet_name, x_coord, y_coord, x_vel, y_vel, radius, mass, NULL, 0, 0);
-    if (!new_planet) {
-        free(system->sun->name);
-        free(system->sun);
-        free(system);
-        free(planets);
-        printf("Failed to create SolarSystem: malloc error\n");
-        return NULL;
-    }
-    planets[0] = new_planet;
-    system->planets = planets;
-    system->num_planets = 1;
+    system->num_planets = num_planets * 2;
     return system;
 }
 
@@ -316,7 +351,7 @@ SolarSystem *createChaoticSolarSystem(int num_planets, float interval, int dista
     
     float mass = (float)sun_mass;
     float radius = sun_mass * 0.005f;
-    Star *sun = createStar(sun_name, x_coord, y_coord, x_vel, y_vel, radius, mass, NULL);
+    Star *sun = createStar(sun_name, x_coord, y_coord, x_vel, y_vel, radius, mass);
     if (!sun) {
         free(system);
         printf("Failed to create SolarSystem: malloc error\n");
@@ -373,7 +408,7 @@ SolarSystem *createChaoticSolarSystem(int num_planets, float interval, int dista
         
         float mass = planet_mass_mult * (i + 1);
         float radius = mass * 0.1f + 10;
-        World *new_planet = createPlanet(new_planet_name, x_coord, y_coord, x_vel, y_vel, radius, mass, NULL, 0, 0);
+        World *new_planet = createPlanet(new_planet_name, x_coord, y_coord, x_vel, y_vel, radius, mass);
         if (!new_planet) {
             free(system->sun->name);
             free(system->sun);
@@ -392,6 +427,7 @@ SolarSystem *createChaoticSolarSystem(int num_planets, float interval, int dista
     system->num_planets = num_planets;
     return system;
 }
+
 
 
 

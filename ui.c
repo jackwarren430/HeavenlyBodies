@@ -20,6 +20,9 @@ extern int planet_mass_mult;
 extern Button *plus_distance_button;
 extern Button *minus_distance_button;
 extern int distance;
+extern Button *next_button;
+extern Button *prev_button;
+extern SystemState system_type;
 
 // play stuff
 Button *end_button;
@@ -29,9 +32,12 @@ Button *plus_frame_button;
 Button *minus_frame_button;
 Button *zoom_out_button;
 Button *zoom_in_button;
+Button *plus_speed_button;
+Button *minus_speed_button;
 SolarSystem *solar_system;
 SystemPlayback *playback;
 float total_time;
+float time_mult;
 int cur_frame;
 
 Button *menu_button;
@@ -40,13 +46,15 @@ void mainLoop(float deltaTime, SDL_Renderer *renderer, TTF_Font *font, TTF_Font 
 
     switch (state) {
     case MENU_INIT: {
-        view_width = 2000;
         srand(time(NULL));
+        view_width = 1000;
+        system_type = HOMOGENOUS;
         x_offset = 0;
         y_offset = 0;
         num_planets = 1;
         sun_mass = 5000;
         planet_mass_mult = 1;
+        time_mult = 1;
         distance = 50;
         SDL_Color color = (SDL_Color){255, 255, 255, 255};
         play_button = createButton(PLAY_BUTTON_X, PLAY_BUTTON_Y, 80, 40, "Play", color);
@@ -58,6 +66,10 @@ void mainLoop(float deltaTime, SDL_Renderer *renderer, TTF_Font *font, TTF_Font 
         minus_planet_mass_button = createButton(MINUS_PLANETMASS_X, SOLAR_SYSTEM_Y, 30, 30, "-", color);
         plus_distance_button = createButton(PLUS_DISTANCE_X, SOLAR_SYSTEM_Y, 30, 30, "+", color);
         minus_distance_button = createButton(MINUS_DISTANCE_X, SOLAR_SYSTEM_Y, 30, 30, "-", color);
+        next_button = createButton(NEXT_BUTTON_X, NEXT_BUTTON_Y, 40, 30, ">", color);
+        prev_button = createButton(PREV_BUTTON_X, NEXT_BUTTON_Y, 40, 30, "<", color);
+        zoomOut();
+        zoomOut();
         state = MENU;
         break;}
     case MENU: {
@@ -69,6 +81,8 @@ void mainLoop(float deltaTime, SDL_Renderer *renderer, TTF_Font *font, TTF_Font 
         end_button = createButton(70, 60, 50, 35, "End", color);
         zoom_out_button = createButton(70, 120, 100, 35, "zoom out", color);
         zoom_in_button = createButton(200, 120, 100, 35, "zoom in", color);
+        plus_speed_button = createButton(250, 170, 35, 35, "+", color);
+        minus_speed_button = createButton(70, 170, 35, 35, "-", color);
         solar_system = initializeSystem();
         playback = initializePlayback(solar_system);
         total_time = 0;
@@ -78,21 +92,26 @@ void mainLoop(float deltaTime, SDL_Renderer *renderer, TTF_Font *font, TTF_Font 
         state = PLAY;
         break;}
     case PLAY: {
-        updateSystemPhysics(solar_system, deltaTime);
-        updateSystemLife(solar_system, deltaTime);
+        deltaTime *= time_mult;
         total_time += deltaTime;
+        updateSystemPhysics(solar_system, deltaTime);
         updatePlayback(solar_system, playback, total_time);
         renderGraphics(renderer, font, solar_system);
         renderButton(renderer, font, *end_button);
         renderButton(renderer, font, *zoom_out_button);
         renderButton(renderer, font, *zoom_in_button);
+        renderButton(renderer, font, *plus_speed_button);
+        renderButton(renderer, font, *minus_speed_button);
+        char time_speed_text[20];
+        sprintf(time_speed_text, "time: x%.2f", time_mult);
+        renderText(renderer, font, 120, 170, time_speed_text);
         renderTimeFrame(renderer, font, total_time);
         break;}
     case PLAYBACK_INIT: {
         cur_frame = 0;
         SDL_Color color = (SDL_Color){255, 255, 255, 255};
-        pause_button = createButton(70, 60, 80, 35, "Pause", color);
-        menu_button = createButton(SCREEN_WIDTH - 80, 60, 80, 35, "Menu", color);
+        pause_button = createButton(70, 60, 60, 35, "||", color);
+        menu_button = createButton(SCREEN_WIDTH - 100, 60, 80, 35, "Menu", color);
         state = PLAYBACK;
         break; }
     case PLAYBACK: {
@@ -108,10 +127,9 @@ void mainLoop(float deltaTime, SDL_Renderer *renderer, TTF_Font *font, TTF_Font 
         break;}
     case PLAYBACK_PAUSE_INIT: {
         SDL_Color color = (SDL_Color){255, 255, 255, 255};
-        play_button = createButton(70, 60, 60, 35, "Play", color);
+        play_button = createButton(70, 60, 60, 35, ">", color);
         plus_frame_button = createButton(145, 62, 30, 30, "+", color);
         minus_frame_button = createButton(30, 62, 30, 30, "-", color);
-        menu_button = createButton(SCREEN_WIDTH - 100, 60, 80, 35, "Menu", color);
         state = PLAYBACK_PAUSE;
         break;}
     case PLAYBACK_PAUSE: {
@@ -129,16 +147,24 @@ void mainLoop(float deltaTime, SDL_Renderer *renderer, TTF_Font *font, TTF_Font 
 }
 
 SolarSystem *initializeSystem() {
-    //SolarSystem *solar_system = createHomogenousSolarSystem(num_planets, PI / 3, distance, sun_mass, planet_mass_mult);
-    solar_system = createChaoticSolarSystem(num_planets, PI / 3, distance, sun_mass, planet_mass_mult);
-    //solar_system = createTwoBodySystem();
-    //solar_system = createTwoPlanetSystem();
-    //solar_system = createThreeBodyProblem();
+
+    SolarSystem *solar_system = NULL;
+    switch (system_type) {
+    case HOMOGENOUS:
+        solar_system = createHomogenousSolarSystem(num_planets, PI / 3, distance, sun_mass, planet_mass_mult);
+        break;
+    case CHAOTIC:
+        solar_system = createChaoticSolarSystem(num_planets, PI / 3, distance, sun_mass, planet_mass_mult);
+        break;
+    case MOONS:
+        solar_system = createMoonSystem(num_planets, PI / 3, distance, sun_mass, planet_mass_mult);
+        break;
+    }
+    
     if (!solar_system) {
         return NULL;
     }
     return solar_system;
-
 }
 
 void handleEvent(SDL_Event *event) {
@@ -196,6 +222,8 @@ void handleMenuButtonEvent(SDL_Event *event) {
         buttonIsHovered(minus_planet_mass_button, event);
         buttonIsHovered(plus_distance_button, event);
         buttonIsHovered(minus_distance_button, event);
+        buttonIsHovered(next_button, event);
+        buttonIsHovered(prev_button, event);
 
     } else if (event->type == SDL_MOUSEBUTTONDOWN && event->button.button == SDL_BUTTON_LEFT) {
         // play button
@@ -235,6 +263,33 @@ void handleMenuButtonEvent(SDL_Event *event) {
             distance -= 5;
         }
 
+        if (next_button->isHovered) {
+            switch (system_type) {
+            case HOMOGENOUS:
+                system_type = CHAOTIC;
+                break;
+            case CHAOTIC:
+                system_type = MOONS;
+                break;
+            case MOONS:
+                system_type = HOMOGENOUS;
+                break;
+            }
+        }
+
+        if (prev_button->isHovered) {
+            switch (system_type) {
+            case HOMOGENOUS:
+                system_type = MOONS;
+                break;
+            case CHAOTIC:
+                system_type = HOMOGENOUS;
+                break;
+            case MOONS:
+                system_type = CHAOTIC;
+                break;
+            }
+        }
     }
 }
 
@@ -243,6 +298,8 @@ void handlePlayButtonEvent(SDL_Event *event) {
         buttonIsHovered(end_button, event);
         buttonIsHovered(zoom_out_button, event);
         buttonIsHovered(zoom_in_button, event);
+        buttonIsHovered(plus_speed_button, event);
+        buttonIsHovered(minus_speed_button, event);
         
     } else if (event->type == SDL_MOUSEBUTTONDOWN) {
         // end button
@@ -257,7 +314,14 @@ void handlePlayButtonEvent(SDL_Event *event) {
         if (zoom_in_button->isHovered && event->button.button == SDL_BUTTON_LEFT) {
             zoomIn();
         }
+
+        if (plus_speed_button->isHovered && event->button.button == SDL_BUTTON_LEFT) {
+            time_mult *= 2.0f;
+        }
         
+        if (minus_speed_button->isHovered && event->button.button == SDL_BUTTON_LEFT) {
+            time_mult *= 0.5f;
+        }
     }
 }
 

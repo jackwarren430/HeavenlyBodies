@@ -18,7 +18,6 @@ typedef struct star {
     float velocity[2];
     float radius;
     float mass;
-    float em_field_strength;
 } Star;
 
 typedef struct planet {
@@ -27,12 +26,9 @@ typedef struct planet {
     float velocity[2];
     float radius;
     float mass;
-    float em_field_strength;
-    float water;
-    int life; // life += water * life * ((sun_em_field_strength / distance^2) - planet_em_field_strength)
 } World;
 /**
- * 
+ * life += water * life * ((sun_em_field_strength / distance^2) - planet_em_field_strength)
  * life represents the total amount of sustained life on a planet
  * water represents the necessary ingredients nescesarry for life
  * 
@@ -60,13 +56,11 @@ typedef struct SystemPlayback {
     int frame_capacity;
 } SystemPlayback;
 
-World *createPlanet(char *name, float x_coord, float y_coord, float x_vel, float y_vel,float radius, float mass, float *em_field_strength, int water, int life);
-Star *createStar(char *name, float x_coord, float y_coord, float x_vel, float y_vel,float radius, float mass, float *em_field_strength);
+World *createPlanet(char *name, float x_coord, float y_coord, float x_vel, float y_vel,float radius, float mass);
+Star *createStar(char *name, float x_coord, float y_coord, float x_vel, float y_vel,float radius, float mass);
 SolarSystem *createHomogenousSolarSystem(int num_planets, float interval, int distance, int sun_mass, int planet_mass_mult);
 SolarSystem *createChaoticSolarSystem(int num_planets, float interval, int distance, int sun_mass, int planet_mass_mult);
-SolarSystem *createMoonSystem();
-void updateSystemLife(SolarSystem *solar_system, float deltaTime);
-void calculateLifeEnergy(World *planet);
+SolarSystem *createMoonSystem(int num_planets, float interval, int distance, int sun_mass, int planet_mass_mult);
 
 SystemPlayback *initializePlayback(SolarSystem *system);
 int updatePlayback(SolarSystem *system, SystemPlayback *playback, float cur_time);
