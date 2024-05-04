@@ -40,7 +40,8 @@ void mainLoop(float deltaTime, SDL_Renderer *renderer, TTF_Font *font, TTF_Font 
 
     switch (state) {
     case MENU_INIT: {
-        view_width = SCREEN_WIDTH;
+        view_width = 2000;
+        srand(time(NULL));
         x_offset = 0;
         y_offset = 0;
         num_planets = 1;
@@ -128,8 +129,8 @@ void mainLoop(float deltaTime, SDL_Renderer *renderer, TTF_Font *font, TTF_Font 
 }
 
 SolarSystem *initializeSystem() {
-    SolarSystem *solar_system = createHomogenousSolarSystem(num_planets, PI / 3, distance, sun_mass, planet_mass_mult);
-    //solar_system = createChaoticSolarSystem(100, PI / 10, 10);
+    //SolarSystem *solar_system = createHomogenousSolarSystem(num_planets, PI / 3, distance, sun_mass, planet_mass_mult);
+    solar_system = createChaoticSolarSystem(num_planets, PI / 3, distance, sun_mass, planet_mass_mult);
     //solar_system = createTwoBodySystem();
     //solar_system = createTwoPlanetSystem();
     //solar_system = createThreeBodyProblem();
